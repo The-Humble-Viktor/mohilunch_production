@@ -20,12 +20,14 @@ export async function approveReview(id: string) {
   await requireAdmin();
   const admin = createAdminClient();
   await admin.from('reviews').update({ status: 'approved' }).eq('id', id);
+  revalidatePath('/admin');
 }
 
 export async function rejectReview(id: string) {
   await requireAdmin();
   const admin = createAdminClient();
   await admin.from('reviews').update({ status: 'rejected' }).eq('id', id);
+  revalidatePath('/admin');
 }
 
 export async function uploadMenuItemImage(formData: FormData) {
