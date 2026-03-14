@@ -40,8 +40,14 @@ export function ReviewForm({ slug, userDisplayName, onReviewSubmitted }: ReviewF
       setRating(0);
       setBody('');
       onReviewSubmitted?.();
-    } catch {
-      setError('Failed to submit review. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.startsWith('RATE_LIMIT:')) {
+        const hours = msg.split(':')[1];
+        setError(`You've reached the 2-review limit. Try again in ${hours}h.`);
+      } else {
+        setError('Failed to submit review. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

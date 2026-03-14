@@ -4,6 +4,14 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+const reviewRatelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(2, '24 h'),
+  prefix: 'review',
+});
 
 export async function submitReview(formData: {
   slug: string;
@@ -20,6 +28,13 @@ export async function submitReview(formData: {
 
   if (rating < 1 || rating > 5) throw new Error('Invalid rating');
   if (body && body.length > 1000) throw new Error('Review too long');
+
+  const { success, reset } = await reviewRatelimit.limit(user.id);
+  if (!success) {
+    const retryAfterMs = reset - Date.now();
+    const retryAfterHours = Math.ceil(retryAfterMs / 1000 / 60 / 60);
+    throw new Error(`RATE_LIMIT:${retryAfterHours}`);
+  }
 
   const { error } = await supabase.from('reviews').insert({
     food_slug: slug,
