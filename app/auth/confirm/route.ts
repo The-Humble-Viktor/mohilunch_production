@@ -8,7 +8,9 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const rawNext = searchParams.get("next") ?? "/";
+  // Only allow relative paths on the same origin to prevent open redirects
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   // Handle OAuth callback (Google, etc.)
   if (code) {
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       redirect(next);
     }
-    redirect(`/auth/error?error=${error?.message}`);
+    redirect(`/auth/error?error=Authentication failed`);
   }
 
   // Handle email OTP confirmation
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       redirect(next);
     } else {
-      redirect(`/auth/error?error=${error?.message}`);
+      redirect(`/auth/error?error=Verification failed`);
     }
   }
 

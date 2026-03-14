@@ -5,6 +5,35 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+export async function submitReview(formData: {
+  slug: string;
+  rating: number;
+  body: string | null;
+  anonymous: boolean;
+  displayName: string | null;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/auth/login');
+
+  const { slug, rating, body, anonymous, displayName } = formData;
+
+  if (rating < 1 || rating > 5) throw new Error('Invalid rating');
+  if (body && body.length > 1000) throw new Error('Review too long');
+
+  const { error } = await supabase.from('reviews').insert({
+    food_slug: slug,
+    user_id: user.id,
+    rating,
+    body: body || null,
+    anonymous,
+    display_name: anonymous ? null : displayName,
+  });
+
+  if (error) throw new Error('Failed to submit review');
+  revalidatePath(`/food/${slug}`);
+}
+
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -38,6 +67,19 @@ export async function uploadMenuItemImage(formData: FormData) {
 
   if (!slug || !file || file.size === 0) return;
 
+  // Validate slug format to prevent path traversal
+  if (!/^[a-z0-9-]+$/.test(slug)) throw new Error('Invalid slug');
+
+  // Validate file extension and MIME type against allowlist
+  const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
+  const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (!ALLOWED_EXTENSIONS.has(ext)) throw new Error('Invalid file type');
+  if (!ALLOWED_MIME_TYPES.has(file.type)) throw new Error('Invalid MIME type');
+
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) throw new Error('File too large');
+
   const admin = createAdminClient();
 
   // Delete existing image for this slug (enforces 1 image per item)
@@ -52,7 +94,6 @@ export async function uploadMenuItemImage(formData: FormData) {
   }
 
   // Upload new image
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${slug}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 

@@ -225,7 +225,7 @@ async function FoodContent({ params }: { params: Promise<{ slug: string }> }) {
       {/* Review form */}
       <div className="mb-10">
         {user ? (
-          <ReviewForm slug={slug} userId={user.id} userDisplayName={userDisplayName} />
+          <ReviewForm slug={slug} userDisplayName={userDisplayName} />
         ) : (
           <div className="rounded-xl border border-monarch-border bg-monarch-surface p-6 text-center">
             <p className="text-gray-400 mb-3">Sign in to leave a review</p>

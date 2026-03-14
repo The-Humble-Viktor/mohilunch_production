@@ -1,17 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { submitReview } from '@/app/admin/actions';
 import { StarPicker } from './StarRating';
 
 interface ReviewFormProps {
   slug: string;
-  userId: string;
   userDisplayName: string;
   onReviewSubmitted?: () => void;
 }
 
-export function ReviewForm({ slug, userId, userDisplayName, onReviewSubmitted }: ReviewFormProps) {
+export function ReviewForm({ slug, userDisplayName, onReviewSubmitted }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
   const [anonymous, setAnonymous] = useState(false);
@@ -29,28 +28,23 @@ export function ReviewForm({ slug, userId, userDisplayName, onReviewSubmitted }:
     setIsSubmitting(true);
     setError(null);
 
-    const supabase = createClient();
-
-    const { error: insertError } = await supabase.from('reviews').insert({
-      food_slug: slug,
-      user_id: userId,
-      rating,
-      body: body.trim() || null,
-      anonymous,
-      display_name: anonymous ? null : userDisplayName,
-    });
-
-    if (insertError) {
-      setError(`Failed to submit review: ${insertError.message}`);
+    try {
+      await submitReview({
+        slug,
+        rating,
+        body: body.trim() || null,
+        anonymous,
+        displayName: anonymous ? null : userDisplayName,
+      });
+      setSuccess(true);
+      setRating(0);
+      setBody('');
+      onReviewSubmitted?.();
+    } catch {
+      setError('Failed to submit review. Please try again.');
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    setSuccess(true);
-    setRating(0);
-    setBody('');
-    onReviewSubmitted?.();
-    setIsSubmitting(false);
   }
 
   if (success) {
