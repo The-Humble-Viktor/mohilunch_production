@@ -44,7 +44,7 @@ export function ReviewForm({ slug, userDisplayName, onReviewSubmitted }: ReviewF
       const msg = err instanceof Error ? err.message : '';
       if (msg.startsWith('RATE_LIMIT:')) {
         const hours = msg.split(':')[1];
-        setError(`You've reached the 2-review limit. Try again in ${hours}h.`);
+        setError(`You've reached the limit of 2 reviews every 24 hours. Try again in ${hours}h.`);
       } else {
         setError('Failed to submit review. Please try again.');
       }
