@@ -12,7 +12,7 @@ const ratelimit = new Ratelimit({
 // Stricter limit for auth endpoints
 const authRatelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  limiter: Ratelimit.slidingWindow(30, "1 m"),
   analytics: true,
   prefix: "auth",
 });
