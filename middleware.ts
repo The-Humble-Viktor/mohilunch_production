@@ -5,14 +5,14 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  limiter: Ratelimit.slidingWindow(6000, "1 m"),
   analytics: true,
 });
 
 // Stricter limit for auth endpoints
 const authRatelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(30, "1 m"),
+  limiter: Ratelimit.slidingWindow(300, "1 m"),
   analytics: true,
   prefix: "auth",
 });
